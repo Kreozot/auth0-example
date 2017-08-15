@@ -1,21 +1,16 @@
 import Expo from 'expo';
 import React from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  Button,
-  Linking,
-} from 'react-native';
+import { StyleSheet, Text, View, Button, Linking } from 'react-native';
 import jwtDecoder from 'jwt-decode';
 
+const callbackURLScheme = 'ExpoAuth0Example://';
 let redirectUri;
 if (Expo.Constants.manifest.xde) {
   // Hi there, dear reader!
   // This value needs to be the tunnel url for your local Expo project.
   // It also needs to be listed in valid callback urls of your Auth0 Client
   // Settings. See the README for more information.
-  redirectUri = 'exp://e8-j5w.charlesvinette.exponent-auth0.exp.direct/+/redirect';
+  redirectUri = 'exp://uq-gjy.charlesvinette.auth0-example.exp.direct/+/redirect';
 } else {
   redirectUri = `${Expo.Constants.linkingUri}/redirect`;
 }
@@ -32,35 +27,40 @@ class App extends React.Component {
   }
 
   _loginWithAuth0 = async () => {
-    const redirectionURL = `${auth0Domain}/authorize` + this._toQueryString({
-      client_id: auth0ClientId,
-      response_type: 'token',
-      scope: 'openid name',
-      redirect_uri: redirectUri,
-      state: redirectUri,
+    const redirectionURL =
+      `${auth0Domain}/authorize` +
+      this._toQueryString({
+        client_id: auth0ClientId,
+        response_type: 'token',
+        scope: 'openid name',
+        redirect_uri: redirectUri,
+        state: redirectUri,
+      });
+    const result = await Expo.WebBrowser.openBrowserAsync(redirectionURL, {
+      callbackURLScheme,
     });
-    Expo.WebBrowser.openBrowserAsync(redirectionURL);
-  }
+    this._handleAuth0Redirect(result.url);
+  };
 
   _loginWithAuth0Twitter = async () => {
-    const redirectionURL = `${auth0Domain}/authorize` + this._toQueryString({
-      client_id: auth0ClientId,
-      response_type: 'token',
-      scope: 'openid name',
-      redirect_uri: redirectUri,
-      connection: 'twitter',
-      state: redirectUri,
+    const redirectionURL =
+      `${auth0Domain}/authorize` +
+      this._toQueryString({
+        client_id: auth0ClientId,
+        response_type: 'token',
+        scope: 'openid name',
+        redirect_uri: redirectUri,
+        connection: 'twitter',
+        state: redirectUri,
+      });
+    const result = await Expo.WebBrowser.openBrowserAsync(redirectionURL, {
+      callbackURLScheme: redirectUri,
     });
-    Expo.WebBrowser.openBrowserAsync(redirectionURL);
-  }
+    this._handleAuth0Redirect(result.url);
+  };
 
-  _handleAuth0Redirect = async (event) => {
-    console.log('yo');
-    if (!event.url.includes('+/redirect')) {
-      return;
-    }
-    Expo.WebBrowser.dismissBrowser();
-    const [, queryString] = event.url.split('#');
+  _handleAuth0Redirect = async callbackURL => {
+    const [, queryString] = callbackURL.split('#');
     const responseObj = queryString.split('&').reduce((map, pair) => {
       const [key, value] = pair.split('=');
       map[key] = value; // eslint-disable-line
@@ -70,29 +70,38 @@ class App extends React.Component {
     const decodedToken = jwtDecoder(encodedToken);
     const username = decodedToken.name;
     this.setState({ username });
-  }
+  };
 
   /**
    * Converts an object to a query string.
    */
   _toQueryString(params) {
-    return '?' + Object.entries(params)
-      .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-      .join('&');
+    return (
+      '?' +
+      Object.entries(params)
+        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+        .join('&')
+    );
   }
 
   render() {
     return (
       <View style={styles.container}>
-        {this.state.username !== undefined ?
-          <Text style={styles.title}>Hi {this.state.username}!</Text> :
-          <View>
-            <Text style={styles.title}>Example: Auth0 login</Text>
-            <Button title="Login with Auth0" onPress={this._loginWithAuth0} />
-            <Text style={styles.title}>Example: Auth0 force Twitter</Text>
-            <Button title="Login with Auth0-Twitter" onPress={this._loginWithAuth0Twitter} />
-          </View>
-        }
+        {this.state.username !== undefined
+          ? <Text style={styles.title}>
+              Hi {this.state.username}!
+            </Text>
+          : <View>
+              <Text style={styles.title}>Example: Auth0 login</Text>
+              <Button title="Login with Auth0" onPress={this._loginWithAuth0} />
+              <Text style={styles.title}>Example: Auth0 force Twitter</Text>
+              <Button title="Login with Auth0-Twitter" onPress={this._loginWithAuth0Twitter} />
+              <Text style={styles.title}>Example: Open Google.com</Text>
+              <Button
+                title="Open Google"
+                onPress={() => Expo.WebBrowser.openBrowserAsync('https://google.com', {})}
+              />
+            </View>}
       </View>
     );
   }
