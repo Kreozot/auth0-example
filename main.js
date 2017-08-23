@@ -1,6 +1,6 @@
 import Expo from 'expo';
 import React from 'react';
-import { StyleSheet, Text, View, Button, Linking } from 'react-native';
+import { StyleSheet, Text, View, Button, Linking, Platform } from 'react-native';
 import jwtDecoder from 'jwt-decode';
 
 const callbackURLScheme = 'ExpoAuth0Example://';
@@ -39,7 +39,9 @@ class App extends React.Component {
     const result = await Expo.WebBrowser.openBrowserAsync(redirectionURL, {
       callbackURLScheme,
     });
-    this._handleAuth0Redirect(result.url);
+    if (Platform.OS === 'ios' && result) {
+      this._handleAuth0Redirect(result);
+    }
   };
 
   _loginWithAuth0Twitter = async () => {
@@ -56,11 +58,13 @@ class App extends React.Component {
     const result = await Expo.WebBrowser.openBrowserAsync(redirectionURL, {
       callbackURLScheme: redirectUri,
     });
-    this._handleAuth0Redirect(result.url);
+    if (Platform.OS === 'ios' && result) {
+      this._handleAuth0Redirect(result);
+    }
   };
 
-  _handleAuth0Redirect = async callbackURL => {
-    const [, queryString] = callbackURL.split('#');
+  _handleAuth0Redirect = async event => {
+    const [, queryString] = event.url.split('#');
     const responseObj = queryString.split('&').reduce((map, pair) => {
       const [key, value] = pair.split('=');
       map[key] = value; // eslint-disable-line
@@ -92,16 +96,16 @@ class App extends React.Component {
               Hi {this.state.username}!
             </Text>
           : <View>
-              <Text style={styles.title}>Example: Auth0 login</Text>
-              <Button title="Login with Auth0" onPress={this._loginWithAuth0} />
-              <Text style={styles.title}>Example: Auth0 force Twitter</Text>
-              <Button title="Login with Auth0-Twitter" onPress={this._loginWithAuth0Twitter} />
-              <Text style={styles.title}>Example: Open Google.com</Text>
-              <Button
+            <Text style={styles.title}>Example: Auth0 login</Text>
+            <Button title="Login with Auth0" onPress={this._loginWithAuth0} />
+            <Text style={styles.title}>Example: Auth0 force Twitter</Text>
+            <Button title="Login with Auth0-Twitter" onPress={this._loginWithAuth0Twitter} />
+            <Text style={styles.title}>Example: Open Google.com</Text>
+            <Button
                 title="Open Google"
                 onPress={() => Expo.WebBrowser.openBrowserAsync('https://google.com', {})}
               />
-            </View>}
+          </View>}
       </View>
     );
   }
